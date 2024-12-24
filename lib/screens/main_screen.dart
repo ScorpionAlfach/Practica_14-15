@@ -3,6 +3,8 @@ import 'catalog_screen.dart';
 import 'favorites_screen.dart';
 import 'cart_screen.dart';
 import 'profile_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart'; // Импортируем экран входа
 
 class MainScreen extends StatefulWidget {
   @override
@@ -19,9 +21,26 @@ class _MainScreenState extends State<MainScreen> {
     ProfileScreen(),
   ];
 
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Главный экран'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.exit_to_app),
+            onPressed: _signOut,
+          ),
+        ],
+      ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

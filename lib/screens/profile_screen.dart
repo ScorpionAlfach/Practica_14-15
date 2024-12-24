@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/supabase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart'; // Импортируем экран входа для перехода после выхода
 import '../screens/my_orders_screen.dart'; // Импортируем экран "Мои заказы"
+import 'package:provider/provider.dart';
+import '../providers/product_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -10,7 +11,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _supabaseService = SupabaseService();
   final _nameController = TextEditingController();
   final _surnameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -26,32 +26,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
-    final user = _supabaseService.getCurrentUser();
+    final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       setState(() {
-        _nameController.text = user.userMetadata?['name'] ?? '';
-        _surnameController.text = user.userMetadata?['surname'] ?? '';
+        _nameController.text = user.displayName ?? '';
+        _surnameController.text = ''; // Добавьте логику для фамилии, если нужно
         _emailController.text = user.email ?? '';
-        _phoneController.text = user.userMetadata?['phone'] ?? '';
+        _phoneController.text = ''; // Добавьте логику для телефона, если нужно
       });
     }
   }
 
   Future<void> _loadOrders() async {
-    final orders = _supabaseService.getOrders();
+    final productProvider =
+        Provider.of<ProductProvider>(context, listen: false);
+    final orders = productProvider.orders;
     setState(() {
       _orders = orders;
     });
   }
 
   Future<void> _updateProfile() async {
-    final user = _supabaseService.getCurrentUser();
+    final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await _supabaseService.updateUserMetadata({
-        'name': _nameController.text,
-        'surname': _surnameController.text,
-        'phone': _phoneController.text,
-      });
+      await user.updateDisplayName(_nameController.text);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Профиль обновлен')),
       );
@@ -60,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _signOut() async {
     try {
-      await _supabaseService.signOut();
+      await FirebaseAuth.instance.signOut();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -108,6 +106,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(height: 20),
 
             // Кнопка для выхода
+            ElevatedButton(
+              onPressed: _signOut,
+              child: Text('Выйти'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Colors.blue, // Используем backgroundColor вместо primary
+              ),
+            ),
+            SizedBox(height: 20),
 
             // Кнопка для перехода на страницу "Мои заказы"
             ElevatedButton(
@@ -120,15 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text('Мои заказы'),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _signOut,
-              child: Text('Выйти'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Colors.blue, // Используем backgroundColor вместо primary
-              ),
-            ),
-            SizedBox(height: 20),
+
             // Список заказов
             Expanded(
               child: ListView.builder(
