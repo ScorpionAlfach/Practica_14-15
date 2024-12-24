@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  // Методы входа и регистрации
   Future<AuthResponse> signIn(String email, String password) async {
     return await _supabase.auth
         .signInWithPassword(email: email, password: password);
@@ -46,5 +47,26 @@ class SupabaseService {
         'phone': phone,
       });
     }
+  }
+
+  // Локальный список для хранения заказов
+  final List<Map<String, dynamic>> _orders = [];
+
+  // Метод для создания заказа
+  void createOrder(
+      String userId, List<Map<String, dynamic>> products, double totalPrice) {
+    final order = {
+      'user_id': userId,
+      'products': products,
+      'total_price': totalPrice,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+    _orders.add(order);
+    print('Order created: $order');
+  }
+
+  // Метод для получения списка заказов
+  List<Map<String, dynamic>> getOrders() {
+    return _orders;
   }
 }

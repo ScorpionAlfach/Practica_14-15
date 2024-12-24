@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
 import 'login_screen.dart'; // Импортируем экран входа для перехода после выхода
+import '../screens/my_orders_screen.dart'; // Импортируем экран "Мои заказы"
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -15,10 +16,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
+  List<dynamic> _orders = [];
+
   @override
   void initState() {
     super.initState();
     _loadProfileData();
+    _loadOrders();
   }
 
   Future<void> _loadProfileData() async {
@@ -31,6 +35,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _phoneController.text = user.userMetadata?['phone'] ?? '';
       });
     }
+  }
+
+  Future<void> _loadOrders() async {
+    final orders = _supabaseService.getOrders();
+    setState(() {
+      _orders = orders;
+    });
   }
 
   Future<void> _updateProfile() async {
@@ -69,6 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Поля для редактирования профиля
             TextField(
               controller: _nameController,
               decoration: InputDecoration(labelText: 'Имя'),
@@ -87,9 +99,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: InputDecoration(labelText: 'Телефон'),
             ),
             SizedBox(height: 20),
+
+            // Кнопка для обновления профиля
             ElevatedButton(
               onPressed: _updateProfile,
               child: Text('Изменить'),
+            ),
+            SizedBox(height: 20),
+
+            // Кнопка для выхода
+
+            // Кнопка для перехода на страницу "Мои заказы"
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyOrdersScreen()),
+                );
+              },
+              child: Text('Мои заказы'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
@@ -98,6 +126,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     Colors.blue, // Используем backgroundColor вместо primary
+              ),
+            ),
+            SizedBox(height: 20),
+            // Список заказов
+            Expanded(
+              child: ListView.builder(
+                itemCount: _orders.length,
+                itemBuilder: (context, index) {
+                  final order = _orders[index];
+                  return ListTile(
+                    title: Text('Заказ №${index + 1}'),
+                    subtitle: Text('Итого: ${order['total_price']} ₽'),
+                    trailing: Text('${order['created_at']}'),
+                  );
+                },
               ),
             ),
           ],

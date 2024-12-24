@@ -1,8 +1,7 @@
-# Практическая работа №10 Supabase
-![alt text](image.png)
+# Практическая работа №12 Оформление заказов
+# Кнопка "Мои заказы" на экране Профиля
 ![alt text](image-1.png)
+# Оформление товара в корзине
 ![alt text](image-2.png)
+# Все сделанные заказы
 ![alt text](image-3.png)
-# Синхронизация с Supabase
-![alt text](image-4.png)
-![alt text](image-5.png)

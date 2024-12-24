@@ -3,8 +3,16 @@ import '../models/product_model.dart';
 import '../widgets/product_card.dart';
 import 'product_details_screen.dart';
 
-class CatalogScreen extends StatelessWidget {
-  final List<Product> products = [
+class CatalogScreen extends StatefulWidget {
+  @override
+  _CatalogScreenState createState() => _CatalogScreenState();
+}
+
+class _CatalogScreenState extends State<CatalogScreen> {
+  String _searchQuery = '';
+  String _sortBy = 'name'; // По умолчанию сортировка по имени
+
+  final List<Product> _allProducts = [
     Product(
         id: 1,
         name: 'Мяч',
@@ -75,31 +83,118 @@ class CatalogScreen extends StatelessWidget {
         imagePath: 'assets/images/orange_ball.webp'),
   ];
 
+  List<Product> get filteredProducts {
+    var result = _allProducts.where((product) {
+      return product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          product.description
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase());
+    }).toList();
+
+    if (_sortBy == 'price') {
+      result.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sortBy == 'name') {
+      result.sort((a, b) => a.name.compareTo(b.name));
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Каталог')),
-      body: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.8,
-        ),
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ProductDetailsScreen(product: products[index]),
-                ),
-              );
+      appBar: AppBar(
+        title: Text('Каталог'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.sort),
+            onPressed: () {
+              _showSortDialog(context);
             },
-            child: ProductCard(product: products[index]),
-          );
-        },
+          ),
+        ],
       ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: 'Поиск',
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductDetailsScreen(
+                            product: filteredProducts[index]),
+                      ),
+                    );
+                  },
+                  child: ProductCard(product: filteredProducts[index]),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSortDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Сортировка'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text('По цене'),
+                tileColor: _sortBy == 'price'
+                    ? Colors.grey[200]
+                    : null, // Подсветка серым
+                onTap: () {
+                  setState(() {
+                    _sortBy = 'price';
+                  });
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: Text('По имени'),
+                tileColor: _sortBy == 'name'
+                    ? Colors.grey[200]
+                    : null, // Подсветка серым
+                onTap: () {
+                  setState(() {
+                    _sortBy = 'name';
+                  });
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
