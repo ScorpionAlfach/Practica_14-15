@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Импортируем Firestore
+import 'package:firebase_auth/firebase_auth.dart'; // Импортируем Firebase Auth
 import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
 import '../widgets/total_price_widget.dart';
@@ -18,21 +20,33 @@ class CartScreen extends StatelessWidget {
         0.0, (sum, product) => sum + (product.price.toDouble()));
 
     Future<void> placeOrder() async {
-      // Локальное создание заказа
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Пользователь не авторизован')),
+        );
+        return;
+      }
+
+      // Создаем заказ
       final order = {
-        'user_id': 'local_user_id', // Заглушка для user_id
+        'user_id': user.uid, // ID пользователя
         'products': cartProducts
-            .map((product) => {'productId': product.id, 'quantity': 1})
+            .map((product) => {
+                  'productId': product.id,
+                  'name': product.name,
+                  'price': product.price,
+                  'quantity': 1,
+                })
             .toList(),
         'total_price': totalPrice,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at':
+            DateTime.now().toIso8601String(), // Добавляем время создания заказа
       };
 
-      // Добавляем заказ в ProductProvider
-      productProvider.addOrder(order);
-
-      if (context.mounted) {
-        // Проверка на доступность контекста
+      // Сохраняем заказ в Firestore
+      try {
+        await FirebaseFirestore.instance.collection('orders').add(order);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Заказ успешно оформлен!')),
         );
@@ -42,6 +56,11 @@ class CartScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => MyOrdersScreen()),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Ошибка при оформлении заказа: ${e.toString()}')),
         );
       }
     }

@@ -49,6 +49,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _updateProfile() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      if (_nameController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Поле "Имя" не может быть пустым')),
+        );
+        return;
+      }
+
       await user.updateDisplayName(_nameController.text);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Профиль обновлен')),
@@ -74,76 +81,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Профиль')),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Поля для редактирования профиля
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Имя'),
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(labelText: 'Имя'),
+          ),
+          TextField(
+            controller: _surnameController,
+            decoration: InputDecoration(labelText: 'Фамилия'),
+          ),
+          TextField(
+            controller: _emailController,
+            decoration: InputDecoration(labelText: 'Электронная почта'),
+            enabled: false,
+          ),
+          TextField(
+            controller: _phoneController,
+            decoration: InputDecoration(labelText: 'Телефон'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _updateProfile,
+            child: Text('Изменить'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MyOrdersScreen()),
+              );
+            },
+            child: Text('Мои заказы'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _signOut,
+            child: Text('Выйти'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
             ),
-            TextField(
-              controller: _surnameController,
-              decoration: InputDecoration(labelText: 'Фамилия'),
-            ),
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(labelText: 'Электронная почта'),
-              enabled: false,
-            ),
-            TextField(
-              controller: _phoneController,
-              decoration: InputDecoration(labelText: 'Телефон'),
-            ),
-            SizedBox(height: 20),
-
-            // Кнопка для обновления профиля
-            ElevatedButton(
-              onPressed: _updateProfile,
-              child: Text('Изменить'),
-            ),
-            SizedBox(height: 20),
-
-            // Кнопка для выхода
-            ElevatedButton(
-              onPressed: _signOut,
-              child: Text('Выйти'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Colors.blue, // Используем backgroundColor вместо primary
-              ),
-            ),
-            SizedBox(height: 20),
-
-            // Кнопка для перехода на страницу "Мои заказы"
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MyOrdersScreen()),
-                );
-              },
-              child: Text('Мои заказы'),
-            ),
-            SizedBox(height: 20),
-
-            // Список заказов
-            Expanded(
-              child: ListView.builder(
-                itemCount: _orders.length,
-                itemBuilder: (context, index) {
-                  final order = _orders[index];
-                  return ListTile(
-                    title: Text('Заказ №${index + 1}'),
+          ),
+          SizedBox(height: 20),
+          ..._orders
+              .map((order) => ListTile(
+                    title: Text('Заказ №${_orders.indexOf(order) + 1}'),
                     subtitle: Text('Итого: ${order['total_price']} ₽'),
                     trailing: Text('${order['created_at']}'),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+                  ))
+              .toList(),
+        ],
       ),
     );
   }
