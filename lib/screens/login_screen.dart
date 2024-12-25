@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'main_screen.dart'; // Импортируем главный экран
 
 class LoginScreen extends StatefulWidget {
@@ -11,32 +12,73 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLogin = true; // Флаг для определения, вход или регистрация
+  bool _isLoading = false; // Флаг для отображения индикатора загрузки
 
   Future<void> _signUpWithEmailAndPassword(
       String email, String password) async {
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Регистрация пользователя в Firebase Authentication
+      final userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
+      );
+
+      // Добавление пользователя в коллекцию `users` в Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+        'email': email,
+        'role': 'client', // По умолчанию роль "client"
+      });
+
+      // Переход на главный экран после успешной регистрации
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => MainScreen()),
       );
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Ошибка регистрации')),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> _signInWithEmailAndPassword(
       String email, String password) async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Вход пользователя в Firebase Authentication
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
+      );
+
+      // Переход на главный экран после успешного входа
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => MainScreen()),
       );
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Ошибка входа')),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -45,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      print('Email or password is empty');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Пожалуйста, заполните все поля')),
       );
@@ -57,12 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       await _signUpWithEmailAndPassword(email, password);
     }
-
-    // Переход на главный экран после успешного входа или регистрации
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => MainScreen()),
-    );
   }
 
   @override
@@ -86,10 +121,12 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submit,
-              child: Text(_isLogin ? 'Войти' : 'Зарегистрироваться'),
-            ),
+            _isLoading
+                ? CircularProgressIndicator() // Индикатор загрузки
+                : ElevatedButton(
+                    onPressed: _submit,
+                    child: Text(_isLogin ? 'Войти' : 'Зарегистрироваться'),
+                  ),
             TextButton(
               onPressed: () {
                 setState(() {

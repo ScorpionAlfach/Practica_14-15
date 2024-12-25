@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'login_screen.dart'; // Импортируем экран входа для перехода после выхода
-import '../screens/my_orders_screen.dart'; // Импортируем экран "Мои заказы"
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'login_screen.dart';
+import 'seller_chats_screen.dart';
+import 'chat_screen.dart';
+import '../screens/my_orders_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 
@@ -30,9 +33,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user != null) {
       setState(() {
         _nameController.text = user.displayName ?? '';
-        _surnameController.text = ''; // Добавьте логику для фамилии, если нужно
+        _surnameController.text = '';
         _emailController.text = user.email ?? '';
-        _phoneController.text = ''; // Добавьте логику для телефона, если нужно
+        _phoneController.text = '';
       });
     }
   }
@@ -77,8 +80,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<String> _getOrCreateChatId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('Пользователь не авторизован');
+
+    final sellerEmail = 'email@gmail.com'; // Email продавца
+    final sellerQuery = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: sellerEmail)
+        .get();
+
+    if (sellerQuery.docs.isEmpty) throw Exception('Продавец не найден');
+
+    final sellerId = sellerQuery.docs.first.id;
+    final clientId = user.uid;
+
+    // Поиск существующего чата
+    final chatQuery = await FirebaseFirestore.instance
+        .collection('chats')
+        .where('clientId', isEqualTo: clientId)
+        .where('sellerId', isEqualTo: sellerId)
+        .get();
+
+    if (chatQuery.docs.isNotEmpty) {
+      return chatQuery.docs.first.id; // Возвращаем ID существующего чата
+    }
+
+    // Создание нового чата
+    final chatRef = await FirebaseFirestore.instance.collection('chats').add({
+      'clientId': clientId,
+      'sellerId': sellerId,
+      'lastMessage': 'Чат начат', // Добавляем поле lastMessage
+      'lastMessageTime': DateTime.now(),
+    });
+
+    return chatRef.id; // Возвращаем ID нового чата
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSeller = user?.email == 'email@gmail.com';
+
     return Scaffold(
       appBar: AppBar(title: Text('Профиль')),
       body: ListView(
@@ -115,6 +158,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
             child: Text('Мои заказы'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () async {
+              if (isSeller) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SellerChatsScreen()),
+                );
+              } else {
+                try {
+                  final chatId = await _getOrCreateChatId();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(chatId: chatId),
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ошибка: ${e.toString()}')),
+                  );
+                }
+              }
+            },
+            child: Text(isSeller ? 'Мои чаты' : 'Чат с продавцом'),
           ),
           SizedBox(height: 20),
           ElevatedButton(
