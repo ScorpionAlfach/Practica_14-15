@@ -11,3 +11,5 @@
 # Отправка на rustore
 ![alt text](image-5.png)
 ![alt text](image-6.png)
+# Обновление интерфейса
+![alt text](image-7.png)
