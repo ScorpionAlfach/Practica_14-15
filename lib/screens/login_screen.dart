@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'main_screen.dart'; // Импортируем главный экран
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key}); // Добавлен параметр key
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -38,18 +40,22 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       // Переход на главный экран после успешной регистрации
+      if (!mounted) return; // Проверка mounted
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MainScreen()),
+        MaterialPageRoute(builder: (context) => const MainScreen()),
       );
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return; // Проверка mounted
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Ошибка регистрации')),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -67,18 +73,22 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       // Переход на главный экран после успешного входа
+      if (!mounted) return; // Проверка mounted
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MainScreen()),
+        MaterialPageRoute(builder: (context) => const MainScreen()),
       );
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return; // Проверка mounted
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Ошибка входа')),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -87,8 +97,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
+      if (!mounted) return; // Проверка mounted
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Пожалуйста, заполните все поля')),
+        const SnackBar(content: Text('Пожалуйста, заполните все поля')),
       );
       return;
     }
@@ -113,16 +124,16 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Пароль'),
+              decoration: const InputDecoration(labelText: 'Пароль'),
               obscureText: true,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _isLoading
-                ? CircularProgressIndicator() // Индикатор загрузки
+                ? const CircularProgressIndicator() // Индикатор загрузки
                 : ElevatedButton(
                     onPressed: _submit,
                     child: Text(_isLogin ? 'Войти' : 'Зарегистрироваться'),

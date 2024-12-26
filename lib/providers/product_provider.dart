@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/product_model.dart';
 
 class ProductProvider with ChangeNotifier {
   List<Product> _favoriteProducts = [];
   List<Product> _cartProducts = [];
-  List<Map<String, dynamic>> _orders = []; // Список заказов
+  final List<Map<String, dynamic>> _orders = []; // Поле _orders теперь final
+  List<Review> _reviews = [];
 
-  // Список всех товаров
   final List<Product> _allProducts = [
     Product(
         id: 1,
@@ -26,12 +28,14 @@ class ProductProvider with ChangeNotifier {
 
   List<Product> get favoriteProducts => _favoriteProducts;
   List<Product> get cartProducts => _cartProducts;
-  List<Map<String, dynamic>> get orders => _orders; // Геттер для заказов
-  List<Product> get allProducts => _allProducts; // Геттер для всех товаров
+  List<Map<String, dynamic>> get orders => _orders;
+  List<Product> get allProducts => _allProducts;
+  List<Review> get reviews => _reviews;
 
   ProductProvider() {
     _loadFavorites();
     _loadCart();
+    _loadReviews();
   }
 
   Future<void> _loadFavorites() async {
@@ -50,19 +54,30 @@ class ProductProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Публичный метод для поиска товара по id
+  Future<void> _loadReviews() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final reviewsSnapshot = await FirebaseFirestore.instance
+        .collection('reviews')
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    _reviews =
+        reviewsSnapshot.docs.map((doc) => Review.fromMap(doc.data())).toList();
+    notifyListeners();
+  }
+
   Product findProductById(int id) {
     try {
       return _allProducts.firstWhere((product) => product.id == id);
     } catch (e) {
-      // Если товар не найден, возвращаем заглушку
       return Product(
         id: -1,
         name: 'Товар не найден',
         price: 0,
         description: 'Товар с id $id не найден',
-        imagePath:
-            'assets/images/default_product.jpg', // Путь к изображению по умолчанию
+        imagePath: 'assets/images/default_product.jpg',
       );
     }
   }
@@ -111,9 +126,35 @@ class ProductProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Метод для добавления заказа
   void addOrder(Map<String, dynamic> order) {
     _orders.add(order);
     notifyListeners();
+  }
+
+  Future<void> addReview(Review review) async {
+    _reviews.add(review);
+    await FirebaseFirestore.instance.collection('reviews').add(review.toMap());
+    await _updateProductRating(
+        review.productId); // Убедитесь, что этот метод вызывается
+    notifyListeners();
+  }
+
+  Future<void> _updateProductRating(int productId) async {
+    final reviewsSnapshot = await FirebaseFirestore.instance
+        .collection('reviews')
+        .where('productId', isEqualTo: productId)
+        .get();
+
+    final reviews =
+        reviewsSnapshot.docs.map((doc) => Review.fromMap(doc.data())).toList();
+
+    final totalRating = reviews.fold(0,
+        (total, review) => total + review.rating); // Переименовано sum в total
+    final averageRating = totalRating / reviews.length;
+
+    final product = _allProducts.firstWhere((p) => p.id == productId);
+    product.rating = averageRating;
+
+    notifyListeners(); // Убедитесь, что уведомление о изменении состояния отправляется
   }
 }

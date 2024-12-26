@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/chat_screen.dart';
 
 class SellerChatsScreen extends StatelessWidget {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  SellerChatsScreen({super.key}); // Убрано ключевое слово const
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Мои чаты')),
+      appBar: AppBar(title: const Text('Мои чаты')),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('chats').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final chats = snapshot.data!.docs;
 
           if (chats.isEmpty) {
-            return Center(child: Text('Нет активных чатов'));
+            return const Center(child: Text('Нет активных чатов'));
           }
 
           return ListView.builder(

@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
 }
@@ -53,15 +55,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       if (_nameController.text.isEmpty) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Поле "Имя" не может быть пустым')),
+          const SnackBar(content: Text('Поле "Имя" не может быть пустым')),
         );
         return;
       }
 
       await user.updateDisplayName(_nameController.text);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Профиль обновлен')),
+        const SnackBar(content: Text('Профиль обновлен')),
       );
     }
   }
@@ -69,11 +73,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка выхода: ${e.toString()}')),
       );
@@ -84,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception('Пользователь не авторизован');
 
-    final sellerEmail = 'email@gmail.com'; // Email продавца
+    final sellerEmail = 'email@gmail.com';
     final sellerQuery = await FirebaseFirestore.instance
         .collection('users')
         .where('email', isEqualTo: sellerEmail)
@@ -95,7 +101,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final sellerId = sellerQuery.docs.first.id;
     final clientId = user.uid;
 
-    // Поиск существующего чата
     final chatQuery = await FirebaseFirestore.instance
         .collection('chats')
         .where('clientId', isEqualTo: clientId)
@@ -103,18 +108,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .get();
 
     if (chatQuery.docs.isNotEmpty) {
-      return chatQuery.docs.first.id; // Возвращаем ID существующего чата
+      return chatQuery.docs.first.id;
     }
 
-    // Создание нового чата
     final chatRef = await FirebaseFirestore.instance.collection('chats').add({
       'clientId': clientId,
       'sellerId': sellerId,
-      'lastMessage': 'Чат начат', // Добавляем поле lastMessage
+      'lastMessage': 'Чат начат',
       'lastMessageTime': DateTime.now(),
     });
 
-    return chatRef.id; // Возвращаем ID нового чата
+    return chatRef.id;
   }
 
   @override
@@ -123,49 +127,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isSeller = user?.email == 'email@gmail.com';
 
     return Scaffold(
-      appBar: AppBar(title: Text('Профиль')),
+      appBar: AppBar(title: const Text('Профиль')),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           TextField(
             controller: _nameController,
-            decoration: InputDecoration(labelText: 'Имя'),
+            decoration: const InputDecoration(labelText: 'Имя'),
           ),
           TextField(
             controller: _surnameController,
-            decoration: InputDecoration(labelText: 'Фамилия'),
+            decoration: const InputDecoration(labelText: 'Фамилия'),
           ),
           TextField(
             controller: _emailController,
-            decoration: InputDecoration(labelText: 'Электронная почта'),
+            decoration: const InputDecoration(labelText: 'Электронная почта'),
             enabled: false,
           ),
           TextField(
             controller: _phoneController,
-            decoration: InputDecoration(labelText: 'Телефон'),
+            decoration: const InputDecoration(labelText: 'Телефон'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _updateProfile,
-            child: Text('Изменить'),
+            child: const Text('Изменить'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => MyOrdersScreen()),
+                MaterialPageRoute(builder: (context) => const MyOrdersScreen()),
               );
             },
-            child: Text('Мои заказы'),
+            child: const Text('Мои заказы'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () async {
               if (isSeller) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SellerChatsScreen()),
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          SellerChatsScreen()), // Убрано const
                 );
               } else {
                 try {
@@ -177,6 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 } catch (e) {
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Ошибка: ${e.toString()}')),
                   );
@@ -185,22 +192,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: Text(isSeller ? 'Мои чаты' : 'Чат с продавцом'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _signOut,
-            child: Text('Выйти'),
+            child: const Text('Выйти'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
             ),
           ),
-          SizedBox(height: 20),
-          ..._orders
-              .map((order) => ListTile(
-                    title: Text('Заказ №${_orders.indexOf(order) + 1}'),
-                    subtitle: Text('Итого: ${order['total_price']} ₽'),
-                    trailing: Text('${order['created_at']}'),
-                  ))
-              .toList(),
+          const SizedBox(height: 20),
+          ..._orders.map((order) => ListTile(
+                title: Text('Заказ №${_orders.indexOf(order) + 1}'),
+                subtitle: Text('Итого: ${order['total_price']} ₽'),
+                trailing: Text('${order['created_at']}'),
+              )),
         ],
       ),
     );

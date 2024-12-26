@@ -4,16 +4,18 @@ import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
 
 class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key}); // Добавлен параметр key
+
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Избранное')),
+      appBar: AppBar(title: const Text('Избранное')),
       body: productProvider.favoriteProducts.isEmpty
-          ? Center(child: Text('Нет избранных товаров'))
+          ? const Center(child: Text('Нет избранных товаров'))
           : GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 0.8,
               ),
@@ -22,8 +24,17 @@ class FavoritesScreen extends StatelessWidget {
                 final product = productProvider.favoriteProducts[index];
                 return ProductCard(
                   product: product,
+                  isFavorite: true,
+                  isInCart: productProvider.cartProducts.contains(product),
                   onFavoritePressed: () {
                     productProvider.removeFromFavorites(product);
+                  },
+                  onCartPressed: () {
+                    if (productProvider.cartProducts.contains(product)) {
+                      productProvider.removeFromCart(product);
+                    } else {
+                      productProvider.addToCart(product);
+                    }
                   },
                 );
               },

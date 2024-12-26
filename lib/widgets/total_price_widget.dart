@@ -14,12 +14,22 @@ class TotalPriceWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(16),
-      color: Colors.grey[200],
+      color: Theme.of(context).cardColor, // Используем цвет карточки из темы
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Итого:'),
-          Text('${totalPrice.toStringAsFixed(2)} ₽'),
+          Text(
+            'Итого:',
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge, // Используем стиль текста из темы
+          ),
+          Text(
+            '${totalPrice.toStringAsFixed(2)} ₽',
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge, // Используем стиль текста из темы
+          ),
         ],
       ),
     );

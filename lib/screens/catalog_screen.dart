@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../widgets/product_card.dart';
 import 'product_details_screen.dart';
+import '../providers/product_provider.dart';
 
 class CatalogScreen extends StatefulWidget {
+  const CatalogScreen({super.key}); // Добавлен параметр key
+
   @override
   _CatalogScreenState createState() => _CatalogScreenState();
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
   String _searchQuery = '';
-  String _sortBy = 'name'; // По умолчанию сортировка по имени
+  String _sortBy = 'name';
 
   final List<Product> _allProducts = [
     Product(
@@ -23,7 +27,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
         id: 2,
         name: 'Баскетбольный мяч FAKE',
         price: 925,
-        description: 'Баскетбольные кроссовки',
+        description: 'Баскетбольный мяч для улицы',
         imagePath: 'assets/images/grey_ball.webp'),
     Product(
         id: 3,
@@ -102,12 +106,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final productProvider = Provider.of<ProductProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Каталог'),
+        title: const Text('Каталог'),
         actions: [
           IconButton(
-            icon: Icon(Icons.sort),
+            icon: const Icon(Icons.sort),
             onPressed: () {
               _showSortDialog(context);
             },
@@ -119,7 +125,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Поиск',
                 prefixIcon: Icon(Icons.search),
               ),
@@ -132,23 +138,46 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
           Expanded(
             child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 0.8,
               ),
               itemCount: filteredProducts.length,
               itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                final isFavorite =
+                    productProvider.favoriteProducts.contains(product);
+                final isInCart = productProvider.cartProducts.contains(product);
+
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProductDetailsScreen(
-                            product: filteredProducts[index]),
+                        builder: (context) =>
+                            ProductDetailsScreen(product: product),
                       ),
                     );
                   },
-                  child: ProductCard(product: filteredProducts[index]),
+                  child: ProductCard(
+                    product: product,
+                    isFavorite: isFavorite,
+                    isInCart: isInCart,
+                    onFavoritePressed: () {
+                      if (isFavorite) {
+                        productProvider.removeFromFavorites(product);
+                      } else {
+                        productProvider.addToFavorites(product);
+                      }
+                    },
+                    onCartPressed: () {
+                      if (isInCart) {
+                        productProvider.removeFromCart(product);
+                      } else {
+                        productProvider.addToCart(product);
+                      }
+                    },
+                  ),
                 );
               },
             ),
@@ -163,15 +192,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Сортировка'),
+          title: const Text('Сортировка'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: Text('По цене'),
-                tileColor: _sortBy == 'price'
-                    ? Colors.grey[200]
-                    : null, // Подсветка серым
+                title: const Text('По цене'),
+                tileColor: _sortBy == 'price' ? Colors.grey[200] : null,
                 onTap: () {
                   setState(() {
                     _sortBy = 'price';
@@ -180,10 +207,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 },
               ),
               ListTile(
-                title: Text('По имени'),
-                tileColor: _sortBy == 'name'
-                    ? Colors.grey[200]
-                    : null, // Подсветка серым
+                title: const Text('По имени'),
+                tileColor: _sortBy == 'name' ? Colors.grey[200] : null,
                 onTap: () {
                   setState(() {
                     _sortBy = 'name';

@@ -3,18 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class MyOrdersScreen extends StatelessWidget {
+  const MyOrdersScreen({super.key}); // Добавлен параметр key и const
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('Мои заказы')),
-        body: Center(child: Text('Пользователь не авторизован')),
+        appBar: AppBar(title: const Text('Мои заказы')),
+        body: const Center(child: Text('Пользователь не авторизован')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Мои заказы')),
+      appBar: AppBar(title: const Text('Мои заказы')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('orders')
@@ -23,7 +25,7 @@ class MyOrdersScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -33,7 +35,7 @@ class MyOrdersScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('У вас пока нет заказов'));
+            return const Center(child: Text('У вас пока нет заказов'));
           }
 
           final orders = snapshot.data!.docs;
@@ -42,8 +44,6 @@ class MyOrdersScreen extends StatelessWidget {
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index].data() as Map<String, dynamic>;
-              final products = order['products'] as List<dynamic>;
-
               return ListTile(
                 title: Text('Заказ №${index + 1}'),
                 subtitle: Column(
@@ -52,11 +52,11 @@ class MyOrdersScreen extends StatelessWidget {
                     Text('Итого: ${order['total_price']} ₽'),
                     Text(
                       'Время: ${_formatDateTime(order['created_at'])}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
-                trailing: Icon(Icons.arrow_forward),
+                trailing: const Icon(Icons.arrow_forward),
                 onTap: () {
                   // Дополнительная логика для просмотра деталей заказа
                 },

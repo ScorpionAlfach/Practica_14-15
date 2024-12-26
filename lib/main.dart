@@ -9,10 +9,12 @@ import 'screens/main_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -21,18 +23,27 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'BasketballShop',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,
+          brightness: Brightness.light,
         ),
+        darkTheme: ThemeData(
+          primarySwatch: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        themeMode: ThemeMode.system,
         home: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             } else if (snapshot.hasData) {
-              return MainScreen();
+              return const MainScreen(
+                  key: Key('MainScreen')); // Используем const и key
             } else {
-              return LoginScreen();
+              return const LoginScreen(
+                  key: Key('LoginScreen')); // Используем const и key
             }
           },
         ),
